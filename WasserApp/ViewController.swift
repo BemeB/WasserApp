@@ -14,18 +14,18 @@ class ViewController:UIViewController {
         
     var wassertag = 0
     var tagesziel = ""
-    var finalZiel = 0
     var finalZielseg = ""
+    var Tagesziel = ""
     
     override func viewDidAppear(_ animated: Bool) {
       super.viewDidAppear(animated)
         enablehealth()
-        save()
-        
+        des()
         
         
     }
     @IBOutlet weak var label: UILabel!
+    @IBOutlet weak var aktuellewasser: UILabel!
     
     lazy var healthStore = HKHealthStore()
     func enablehealth(){
@@ -46,11 +46,12 @@ class ViewController:UIViewController {
         }
         
     }
-    
-    func save(){
-        finalZiel = UserDefaults.standard.integer(forKey: "Tagesziel")
-        label.text = String(finalZiel)+" ml"
+    func des(){
+        label.text = finalZielseg
+        tagesziel = finalZielseg
+        
     }
+    
     
     
     @IBOutlet weak var waterLabel: UILabel!
@@ -67,7 +68,7 @@ class ViewController:UIViewController {
         }else {
             sender.stepValue = 50
         }
-        save()
+    
 
         
     }
@@ -88,11 +89,43 @@ class ViewController:UIViewController {
             return
             
         }
+        Wassertag()
         
-        if (wassertag >= finalZiel) {
-            let tag : String = String(finalZiel)
-        print("Tagesziel von " + tag + "wurde erreicht")
+        
+        if (wassertag >= Int(tagesziel) ?? 0) {
+            let tag : String = String(tagesziel)
+        print("Tagesziel von " + tag + " wurde erreicht")
             
         }
 }
+    func Wassertag(){
+        
+        
+        
+        guard let waterType = HKSampleType.quantityType(forIdentifier: .dietaryWater) else {
+                    print("Sample type not available")
+                    return
+                }
+                
+            let Day = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(86.400), end: Date(), options: .strictEndDate)
+                
+                let waterQuery = HKSampleQuery(sampleType: waterType,
+                                               predicate: Day,
+                                               limit: HKObjectQueryNoLimit,
+                                               sortDescriptors: nil) {
+                                                (query, samples, error) in
+                                                
+        guard error == nil, let quantitySamples = samples as? [HKQuantitySample] else {
+            print("Something went wrong: \(String(describing: error))")
+                return
+            }
+        let total = quantitySamples.reduce(0.0) { $0 + $1.quantity.doubleValue(for: HKUnit.literUnit(with: .milli)) }
+            print("Wassergesamt Menge: \(total)")
+            DispatchQueue.main.async {
+                self.aktuellewasser.text = String(total)
+                }
+            }
+    }
+    
 }
+
